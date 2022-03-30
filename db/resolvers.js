@@ -202,6 +202,126 @@ const resolvers = {
         token: createToken(user, process.env.SECRET, "8h"),
       };
     },
+    createProduct: async (_, { input }) => {
+      try {
+        const product = new Product(input);
+
+        const result = await product.save();
+
+        return result;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    updateProduct: async (_, { id, input }) => {
+      let product = await Product.findById(id);
+
+      if (!product) {
+        throw new Error("Product not found");
+      }
+
+      product = await Product.findOneAndUpdate({ _id: id }, input, {
+        new: true,
+      });
+
+      return product;
+    },
+    deleteProduct: async (_, { id }) => {
+      let product = await Product.findById(id);
+
+      if (!product) {
+        throw new Error("Product not found");
+      }
+
+      // Eliminar
+      await Product.findOneAndDelete({ _id: id });
+
+      return "Product Deleted";
+    },
+    createClient: async (_, { input }, ctx) => {
+      console.log(ctx);
+
+      const { email } = input;
+
+      const client = await Client.findOne({ email });
+      if (client) {
+        throw new Error("Ese cliente was registered");
+      }
+
+      const newClient = new Client(input);
+      newClient.vendor = ctx.user.id;
+
+      try {
+        const result = await newClient.save();
+        return result;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    updateClient: async (_, { id, input }, ctx) => {
+      let client = await Client.findById(id);
+
+      if (!client) {
+        throw new Error("The client doesn't exist");
+      }
+
+      if (client.vendor.toString() !== ctx.user.id) {
+        throw new Error("Not have permission");
+      }
+
+      client = await Client.findOneAndUpdate({ _id: id }, input, {
+        new: true,
+      });
+      return client;
+    },
+    deleteClient: async (_, { id }, ctx) => {
+      let client = await Client.findById(id);
+
+      if (!client) {
+        throw new Error("The client doesn't exist");
+      }
+
+      if (client.vendor.toString() !== ctx.user.id) {
+        throw new Error("Not have permission");
+      }
+
+      await Client.findOneAndDelete({ _id: id });
+      return "Client deleted";
+    },
+    createOrder: async (_, { input }, ctx) => {
+      const { client } = input;
+
+      // Verificar si existe o no
+      let existClient = await Client.findById(client);
+
+      if (!existClient) {
+        throw new Error("The client doesn't exist");
+      }
+
+      if (existClient.vendor.toString() !== ctx.user.id) {
+        throw new Error("Not have permission");
+      }
+
+      for await (const _product of input.order) {
+        const { id } = _product;
+
+        const product = await Product.findById(id);
+
+        if (_product.amount > product.existences) {
+          throw new Error(`The product: ${product.name} is not available`);
+        } else {
+          product.existences = product.existences - _product.amount;
+
+          await product.save();
+        }
+      }
+
+      const newOrder = new Order(input);
+      newOrder.vendor = ctx.user.id;
+
+      const result = await newOrder.save();
+      return result;
+    },
   },
 };
 

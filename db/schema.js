@@ -24,7 +24,7 @@ const typeDefs = gql`
   type Product {
     id: ID
     name: String
-    existence: Int
+    existences: Int
     price: Float
     create_at: String
   }
@@ -41,7 +41,7 @@ const typeDefs = gql`
 
   type Order {
     id: ID
-    ordder: [OrderGroup]
+    order: [OrderGroup]
     total: Float
     client: Client
     vendor: ID
@@ -81,7 +81,7 @@ const typeDefs = gql`
 
   input ProductInput {
     name: String!
-    existence: Int!
+    existences: Int!
     price: Float!
   }
 
@@ -147,7 +147,7 @@ const typeDefs = gql`
     # Clients
     createClient(input: ClientInput): Client
     updateClient(id: ID!, input: ClientInput): Client
-    deleteCliente(id: ID!): String
+    deleteClient(id: ID!): String
 
     # Ordes
     createOrder(input: OrderInput): Order
